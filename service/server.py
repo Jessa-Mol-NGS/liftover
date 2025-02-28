@@ -10,6 +10,10 @@ from flask import Flask, request, Response, send_from_directory
 from flask_cors import CORS
 from flask_talisman import Talisman
 
+from pyfaidx import Fasta
+
+class ValidationError(Exception):
+    pass
 
 app = Flask(__name__)
 
@@ -206,12 +210,12 @@ def run_bcftools_norm(genome_version, chrom, pos, ref, alt, verbose=False):
     with tempfile.NamedTemporaryFile(suffix=".vcf", mode="wt", encoding="UTF-8") as input_file, \
             tempfile.NamedTemporaryFile(suffix=".vcf", mode="rt", encoding="UTF-8") as output_file:
 
-        input_file.write(f"""##fileformat=VCFv4.2        
+        input_file.write(f"""##fileformat=VCFv4.2
 ##contig=<ID={chrom},length=100000000>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
 {chrom}	{pos}	.	{ref}	{alt}	60	.	.""")
         input_file.flush()
-        
+
         fasta_path = FASTA_PATHS[genome_version]
 
         #results = pysam.bcftools.norm("-f", fasta_path, input_file.name, split_lines=True)
@@ -285,6 +289,18 @@ def normalize_variant():
     return Response(json.dumps(result), mimetype='application/json')
 
 
+def validate_variant_input(hg, chrom, pos, ref):
+    reference_genome_key = hg.split('-')[0]
+    chrom = chrom if chrom[:3] == 'chr' else f"chr{chrom}"
+    pos = int(pos)
+
+    reference_genome = Fasta(FASTA_PATHS[reference_genome_key])
+    ref_seq = reference_genome[chrom][pos-1:pos-1+len(ref)].seq
+
+    if ref_seq != ref:
+        raise ValidationError(f"Ref {ref} given, but reference genome has {ref_seq} at this position")
+
+
 @app.route("/liftover/", methods=['POST', 'GET'])
 def run_liftover():
     user_ip = get_user_ip(request)
@@ -342,6 +358,13 @@ def run_liftover():
     if verbose:
         print(f"{logging_prefix}: ======================", flush=True)
         print(f"{logging_prefix}: {hg} liftover {format}: {chrom}:{variant_log_string}", flush=True)
+
+    strict = params.get("strict", False)
+    if strict and format == "variant":
+        try:
+            validate_variant_input(hg, chrom, pos, ref)
+        except ValidationError as e:
+            return Response(json.dumps({"error": str(e)}), status=400, mimetype='application/json')
 
     try:
         if format == "variant":
