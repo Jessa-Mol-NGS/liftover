@@ -297,8 +297,8 @@ def validate_variant_input(hg, chrom, pos, ref):
     reference_genome = Fasta(FASTA_PATHS[reference_genome_key])
     ref_seq = reference_genome[chrom][pos-1:pos-1+len(ref)].seq
 
-    if ref_seq.lower() != ref.lower():
-        raise ValidationError(f"Ref {ref} given, but reference genome has {ref_seq} at this position")
+    if ref_seq.upper() != ref.upper():
+        raise ValidationError(f"Ref {ref.upper()} given, but reference genome has {ref_seq.upper()} at this position")
 
 
 @app.route("/liftover/", methods=['POST', 'GET'])
