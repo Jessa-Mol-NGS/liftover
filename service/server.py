@@ -294,7 +294,7 @@ def validate_variant_input(hg, chrom, pos, ref):
     chrom = chrom if chrom[:3] == 'chr' else f"chr{chrom}"
     pos = int(pos)
 
-    reference_genome = Fasta(FASTA_PATHS[reference_genome_key])
+    reference_genome = Fasta(FASTA_PATHS[reference_genome_key], rebuild=False)
     ref_seq = reference_genome[chrom][pos-1:pos-1+len(ref)].seq
 
     if ref_seq.upper() != ref.upper():
