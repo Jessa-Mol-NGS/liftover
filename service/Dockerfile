@@ -12,15 +12,16 @@ RUN apt update && apt-get install --no-install-recommends -y \
     zlib1g-dev
 
 ENV BCFTOOLS_VERSION="1.20"
+ENV SCORE_VERSION="1.20-20240927"
 RUN wget https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2 \
     && tar xjf bcftools-${BCFTOOLS_VERSION}.tar.bz2 \
     && rm bcftools-${BCFTOOLS_VERSION}.tar.bz2 \
     && cd bcftools-${BCFTOOLS_VERSION} \
     && ./configure \
     && cd plugins \
-    && wget https://software.broadinstitute.org/software/score/score_${BCFTOOLS_VERSION}-dev.zip \
-    && unzip score_${BCFTOOLS_VERSION}-dev.zip \
-    && rm score_${BCFTOOLS_VERSION}-dev.zip \
+    && wget https://software.broadinstitute.org/software/score/score_${SCORE_VERSION}.zip \
+    && unzip score_${SCORE_VERSION}.zip \
+    && rm score_${SCORE_VERSION}.zip \
     && cd .. \
     && make \
     && make install \
